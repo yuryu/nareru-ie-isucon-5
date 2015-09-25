@@ -10,7 +10,7 @@ sudo service redis restart
 ./benchmarker # sample
 
 c_time=`date '+%H-%M'`
-LOG_DIR = ~/log 
+LOG_DIR=~/log 
 mkdir -p LOG_DIR/${c_time}
 sudo mv /var/log/nginx/access.log LOG_DIR/${c_time}/nginx_access.log
 sudo mv /var/log/mysql/slow.log LOG_DIR/${c_time}/mysql_slow.log
