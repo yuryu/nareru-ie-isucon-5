@@ -1,0 +1,38 @@
+- name: Install requirements
+  apt: pkg={{item}} state=present
+  with_items:
+    - make
+    - build-essential
+    - libssl-dev
+    - zlib1g-dev
+    - libbz2-dev
+    - libreadline-dev
+    - libsqlite3-dev
+    - wget
+    - curl
+    - llvm
+
+- name: Cloning pyenv
+  sudo: no
+  git: repo=https://github.com/yyuu/pyenv.git dest=~/.pyenv
+
+- name: Append pyenv setting to .bashrc
+  sudo: no
+  shell: |
+    (
+      echo 'export PYENV_ROOT=$HOME/.pyenv'
+      echo 'export PATH=$PYENV_ROOT/bin:$PATH'
+      echo 'eval "$(pyenv init -)"'
+    ) >> ~/.bashrc
+
+- name: Setup specifed python
+  sudo: no
+  shell: |
+    ~/.pyenv/bin/pyenv install {{python_version}}
+    ~/.pyenv/bin/pyenv rehash
+    ~/.pyenv/bin/pyenv global {{python_version}}
+
+- name: Install Python packages using pip
+  sudo: no
+  shell: |
+    ~/.pyenv/shims/pip install redis

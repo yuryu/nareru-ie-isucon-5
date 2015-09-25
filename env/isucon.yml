@@ -1,6 +1,10 @@
 - hosts: isucon
   sudo: yes
 
+  vars:
+    python_version: 3.4.3
+
   roles:
     - base
     - monitoring_tools
+    - python
