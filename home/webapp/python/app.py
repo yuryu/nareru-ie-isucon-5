@@ -91,7 +91,10 @@ def db_execute(query, *args):
 
 
 def authenticate(email, password):
-    query = "SELECT id, account_name, nick_name, email FROM user_salts WHERE email = %s AND passhash = SHA2(CONCAT(%s, s.salt), 512)"
+    query = "SELECT u.id AS id, u.account_name AS account_name, " \
+            " u.nick_name AS nick_name, u.email AS email " \
+            "FROM users u JOIN salts s ON u.id = s.user_id " \
+            "WHERE u.email = %s AND u.passhash = SHA2(CONCAT(%s, s.salt), 512)"
     result = db_fetchone(query, email, password)
     if not result:
         abort_authentication_error()
