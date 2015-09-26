@@ -438,14 +438,15 @@ def get_initialize():
     db_execute("DELETE FROM entries WHERE id > 500000")
     db_execute("DELETE FROM comments WHERE id > 1500000")
 
-    query = "SELECT user_id, owner_id FROM footprints ORDER BY created_at"
-    footprints = db_fetchall(query)
-    for footprint in footprints:
-        owner_id_key = "{0}{1}".format(P_FOOT_PRINT, footprint["owner_id"])
-        cnt = conn.llen(owner_id_key)
-        if cnt == 10:
-            conn.lpop(owner_id_key)
-        conn.rpush(owner_id_key, footprint["user_id"])
+
+    query = "SELECT id FROM users"
+    owners = db_fetchall(query)
+    for owner in owners:
+        query = "SELECT owner_id, user_id FROM footprints WHERE owner_id={0} ORDER BY created_at DESC LIMIT 10".format(owner["id"])
+        footprints = db_fetchall(query)
+        for footprint in reversed(footprints):
+            owner_id_key = "{0}{1}".format(P_FOOT_PRINT, footprint["owner_id"])
+            conn.rpush(owner_id_key, footprint["user_id"])
     return ""
 
 
