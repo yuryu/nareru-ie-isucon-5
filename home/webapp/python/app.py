@@ -194,37 +194,42 @@ def get_index():
     for entry in entries:
         entry["is_private"] = entry["private"] == 1
         entry["title"], entry["content"] = entry["body"].split("\n", 1)
-    
+
     comments_for_me_query = "SELECT c.id AS id, c.entry_id AS entry_id, c.user_id AS user_id, " \
                             " c.comment AS comment, c.created_at AS created_at " \
                             "FROM comments c JOIN entries e ON c.entry_id = e.id " \
                             "WHERE e.user_id = %s ORDER BY c.created_at DESC LIMIT 10"
     comments_for_me = db_fetchall(comments_for_me_query, current_user()["id"])
-    
+
+    friends_map = {}
+    with db().cursor() as cursor:
+        cursor.execute("SELECT another, created_at FROM relations WHERE one = %s",
+                       args=(user_id))
+        for relation in cursor:
+            friends_map.setdefault(relation["another"], relation["created_at"])
+    with db().cursor() as cursor:
+        cursor.execute("SELECT one, created_at FROM relations WHERE another = %s",
+                       args=(user_id))
+        for relation in cursor:
+            friends_map.setdefault(relation["one"], relation["created_at"])
+    friends = list(friends_map.items())
+    print(friends)
+    friends_csv = ",".join([str(f) for f in friends.keys()])
+
     entries_of_friends = []
     with db().cursor() as cursor:
         cursor.execute("SELECT id, user_id, body, created_at FROM entries" \
-                       " WHERE entries.user_id IN (SELECT one FROM relations WHERE another = %s)" \
-                       " ORDER BY created_at DESC LIMIT 10", (user_id))
+                       " WHERE entries.user_id IN (" + friends_csv + ")" \
+                       " ORDER BY created_at DESC LIMIT 10")
         for entry in cursor:
             entry["title"] = entry["body"].split("\n")[0]
             entries_of_friends.append(entry)
-    with db().cursor() as cursor:
-        cursor.execute("SELECT id, user_id, body, created_at FROM entries" \
-                       " WHERE entries.user_id IN (SELECT another FROM relations WHERE one = %s)" \
-                       " ORDER BY created_at DESC LIMIT 10", (user_id))
-        for entry in cursor:
-            entry["title"] = entry["body"].split("\n")[0]
-            entries_of_friends.append(entry)
-
-    entries_of_friends = entries_of_friends[0:10]
 
     comments_of_friends = []
     with db().cursor() as cursor:
-        cursor.execute("SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000")
+        cursor.execute("SELECT * FROM comments WHERE user_id IN (" + friends_csv + " )" \
+                       "ORDER BY created_at DESC LIMIT 100")
         for comment in cursor:
-            if not is_friend(comment["user_id"]):
-                continue
             entry = db_fetchone("SELECT * FROM entries WHERE id = %s", comment["entry_id"])
             entry["is_private"] = (entry["private"] == 1)
             if entry["is_private"] and not permitted(entry["user_id"]):
@@ -232,15 +237,6 @@ def get_index():
             comments_of_friends.append(comment)
             if len(comments_of_friends) >= 10:
                 break
-    
-    friends_map = {}
-    with db().cursor() as cursor:
-        cursor.execute("SELECT * FROM relations WHERE one = %s OR another = %s ORDER BY created_at DESC",
-                       args=(current_user()["id"], current_user()["id"]))
-        for relation in cursor:
-            key = "another" if relation["one"] == current_user()["id"] else "one"
-            friends_map.setdefault(relation[key], relation["created_at"])
-    friends = list(friends_map.items())
     
     query = "SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) AS updated " \
             "FROM footprints " \
