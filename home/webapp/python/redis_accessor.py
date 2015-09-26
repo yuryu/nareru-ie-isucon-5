@@ -5,7 +5,7 @@ p_friend_counter="friend_counter_{}"
 
 conn = redis.StrictRedis(host='localhost', port=6379)
 def get_user_step(conn, user_id):
-    return conn.get(p_step_user.format(user_id=user_id))
+    return conn.lrange(p_step_user.format(user_id=user_id), 0, 9) # []
 
 def set_user_step(conn, user_id, step_user):
     cnt = conn.llen(p_step_user.format(user_id=user_id))
