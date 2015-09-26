@@ -164,7 +164,8 @@ def mark_footprint(user_id):
 @app.get("/login")
 def get_login():
     set_session_user_id(None)
-    return bottle.template("login", {"message": "高負荷に耐えられるSNSコミュニティサイトへようこそ!"})
+    return get_static("login", "index.html")
+    # return bottle.template("login", {"message": "高負荷に耐えられるSNSコミュニティサイトへようこそ!"})
 
 
 @app.post("/login")
@@ -425,6 +426,7 @@ def get_initialize():
     db_execute("DELETE FROM entries WHERE id > 500000")
     db_execute("DELETE FROM comments WHERE id > 1500000")
     return ""
+
 
 
 bottle.BaseTemplate.defaults = {
