@@ -162,7 +162,7 @@ def mark_footprint(user_id):
         query = "INSERT INTO footprints (user_id, owner_id) VALUES (%s, %s)"
         db_execute(query, user_id, owner_id)
 
-        owner_id_key = P_FOOT_PRINT + owner_id
+        owner_id_key = "{0}{1}".format(P_FOOT_PRINT, owner_id)
         cnt = conn.llen(owner_id_key)
         if cnt == 10:
             conn.lpop(owner_id_key)
@@ -250,7 +250,8 @@ def get_index():
     friends = list(friends_map.items())
 
     owner_id = current_user()["id"]
-    owner_id_key = P_FOOT_PRINT + owner_id
+    owner_id_key = "{0}{1}".format(P_FOOT_PRINT, owner_id)
+
     footprints = conn.get(owner_id_key)
 
     return bottle.template("index", {
@@ -440,11 +441,11 @@ def get_initialize():
     query = "SELECT user_id, owner_id FROM footprints ORDER BY created_at"
     footprints = db_fetchall(query)
     for footprint in footprints:
-        cnt = conn.llen(footprint["owner_id"])
+        owner_id_key = "{0}{1}".format(P_FOOT_PRINT, footprint["owner_id"])
+        cnt = conn.llen(owner_id_key)
         if cnt == 10:
-            conn.lpop(footprint["owner_id"])
-        conn.rpush(footprint["owner_id"], footprint["user_id"])
-
+            conn.lpop(owner_id_key)
+        conn.rpush(owner_id_key, footprint["user_id"])
     return ""
 
 
