@@ -207,7 +207,7 @@ def get_index():
             entries_of_friends.append(entry)
     with db().cursor() as cursor:
         cursor.execute("SELECT * FROM entries" \
-                       " WHERE entries.user_id IN (SELECT another FROM relations WHERE one = %s" \
+                       " WHERE entries.user_id IN (SELECT another FROM relations WHERE one = %s)" \
                        " ORDER BY created_at DESC LIMIT 10", (user_id))
         for entry in cursor:
             entry["title"] = entry["body"].split("\n")[0]
