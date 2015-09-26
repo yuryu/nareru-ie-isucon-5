@@ -203,14 +203,14 @@ def get_index():
     
     entries_of_friends = []
     with db().cursor() as cursor:
-        cursor.execute("SELECT * FROM entries" \
+        cursor.execute("SELECT id, user_id, body, created_at FROM entries" \
                        " WHERE entries.user_id IN (SELECT one FROM relations WHERE another = %s)" \
                        " ORDER BY created_at DESC LIMIT 10", (user_id))
         for entry in cursor:
             entry["title"] = entry["body"].split("\n")[0]
             entries_of_friends.append(entry)
     with db().cursor() as cursor:
-        cursor.execute("SELECT * FROM entries" \
+        cursor.execute("SELECT id, user_id, body, created_at FROM entries" \
                        " WHERE entries.user_id IN (SELECT another FROM relations WHERE one = %s)" \
                        " ORDER BY created_at DESC LIMIT 10", (user_id))
         for entry in cursor:
@@ -434,7 +434,6 @@ def get_initialize():
     db_execute("DELETE FROM entries WHERE id > 500000")
     db_execute("DELETE FROM comments WHERE id > 1500000")
     return ""
-
 
 
 bottle.BaseTemplate.defaults = {
