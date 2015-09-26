@@ -213,7 +213,7 @@ def get_index():
         for relation in cursor:
             friends_map.setdefault(relation["one"], relation["created_at"])
     friends = list(friends_map.items())
-    friends_csv = ",".join([str(f) for f in friends.keys()])
+    friends_csv = ",".join([str(f) for f in friends_map.keys()])
 
     entries_of_friends = []
     with db().cursor() as cursor:
