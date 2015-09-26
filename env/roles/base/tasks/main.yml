@@ -1,0 +1,8 @@
+- name: Update apt-get
+  apt: update_cache=yes
+
+- name: Install basic packages
+  apt: name={{item}} state=latest
+  with_items:
+    - emacs
+    - tmux

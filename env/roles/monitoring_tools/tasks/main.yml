@@ -1,0 +1,27 @@
+- name: Install performance monitoring tools (htop, tig, etc.)
+  apt: name={{item}} state=latest
+  with_items:
+    - htop
+    - tig
+
+
+# Install kataribe
+
+- name: Install unzip command
+  apt: name=unzip state=latest
+
+- name: Create a directory (~/kataribe)
+  sudo: no
+  file: state=directory path=~/kataribe/
+
+- name: Download kataribe.zip to HOME
+  sudo: no
+  get_url: url=https://github.com/matsuu/kataribe/releases/download/v0.1.0/linux_amd64.zip dest=~/kataribe.zip
+
+- name: Extract from kataribe.zip to ~/kataribe
+  sudo: no
+  unarchive: src=~/kataribe.zip dest=~/kataribe copy=no
+
+- name: Delete kataribe.zip
+  sudo: no
+  file: state=absent path=~/kataribe.zip
