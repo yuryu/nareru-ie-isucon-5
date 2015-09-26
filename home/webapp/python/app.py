@@ -3,7 +3,7 @@
 import os
 import bottle
 import pymysql
-
+import redis
 
 app = bottle.default_app()
 app.config.load_dict({
@@ -16,7 +16,7 @@ app.config.load_dict({
     },
     "session_secret": os.environ.get("ISUCON5_SESSION_SECRET") or "beermoris",
 })
-
+conn = redis.StrictRedis(host='localhost', port=6379)
 
 PREFECTURES = [
     "未入力",
@@ -24,6 +24,7 @@ PREFECTURES = [
     "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県",
     "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
 ]
+P_FOOT_PRINT = 'f'
 
 
 def abort_authentication_error():
@@ -156,9 +157,16 @@ def permitted(another_id):
 
 
 def mark_footprint(user_id):
-    if user_id != current_user()["id"]:
+    owner_id = current_user()["id"]
+    if user_id != owner_id:
         query = "INSERT INTO footprints (user_id, owner_id) VALUES (%s, %s)"
-        db_execute(query, user_id, current_user()["id"])
+        db_execute(query, user_id, owner_id)
+
+        owner_id_key = P_FOOT_PRINT + owner_id
+        cnt = conn.llen(owner_id_key)
+        if cnt == 10:
+            conn.lpop(owner_id_key)
+        conn.rpush(owner_id_key, user_id)
 
 
 @app.get("/login")
@@ -187,7 +195,7 @@ def get_index():
    
     user_id = current_user()["id"] 
     profile = db_fetchone("SELECT * FROM profiles WHERE user_id = %s", user_id)
-    
+
     query = "SELECT * FROM entries WHERE user_id = %s ORDER BY created_at LIMIT 5"
     entries = db_fetchall(query, current_user()["id"])
     for entry in entries:
@@ -240,15 +248,11 @@ def get_index():
             key = "another" if relation["one"] == current_user()["id"] else "one"
             friends_map.setdefault(relation[key], relation["created_at"])
     friends = list(friends_map.items())
-    
-    query = "SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) AS updated " \
-            "FROM footprints " \
-            "WHERE user_id = %s " \
-            "GROUP BY user_id, owner_id, DATE(created_at) " \
-            "ORDER BY updated DESC " \
-            "LIMIT 10"
-    footprints = db_fetchall(query, current_user()["id"])
-    
+
+    owner_id = current_user()["id"]
+    owner_id_key = P_FOOT_PRINT + owner_id
+    footprints = conn.get(owner_id_key)
+
     return bottle.template("index", {
       "owner": current_user(),
       "profile": profile or {},
@@ -432,6 +436,15 @@ def get_initialize():
     db_execute("DELETE FROM footprints WHERE id > 500000")
     db_execute("DELETE FROM entries WHERE id > 500000")
     db_execute("DELETE FROM comments WHERE id > 1500000")
+
+    query = "SELECT user_id, owner_id FROM footprints ORDER BY created_at"
+    footprints = db_fetchall(query)
+    for footprint in footprints:
+        cnt = conn.llen(footprint["owner_id"])
+        if cnt == 10:
+            conn.lpop(footprint["owner_id"])
+        conn.rpush(footprint["owner_id"], footprint["user_id"])
+
     return ""
 
 
