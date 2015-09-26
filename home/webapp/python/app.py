@@ -181,8 +181,9 @@ def get_logout():
 @app.get("/")
 def get_index():
     authenticated()
-    
-    profile = db_fetchone("SELECT * FROM profiles WHERE user_id = %s", current_user()["id"])
+   
+    user_id = current_user()["id"] 
+    profile = db_fetchone("SELECT * FROM profiles WHERE user_id = %s", user_id)
     
     query = "SELECT * FROM entries WHERE user_id = %s ORDER BY created_at LIMIT 5"
     entries = db_fetchall(query, current_user()["id"])
@@ -201,7 +202,8 @@ def get_index():
         cursor.execute("SELECT * FROM entries" \
                 " WHERE entries.user_id IN (SELECT one FROM relations WHERE another = %s) OR " \
                 "       entries.user_id IN (SELECT another FROM relations WHERE one = %s)" \
-                " ORDER BY created_at DESC LIMIT 10")
+                " ORDER BY created_at DESC LIMIT 10", 
+                (user_id, user_id))
         for entry in cursor:
 #            if not is_friend(entry["user_id"]):
 #                continue
