@@ -1,0 +1,13 @@
+- name: Update sources - 1
+  apt_repository: repo="deb http://nginx.org/packages/ubuntu/ precise nginx"
+- name: update sources - 2
+  apt_repository: repo="deb-src http://nginx.org/packages/ubuntu/ precise nginx"
+
+- name: Add PGP Key
+  apt_key: url=http://nginx.org/keys/nginx_signing.key
+
+- name: Install nginx
+  apt:  pkg=nginx update_cache=yes
+
+- name: Restart nginx
+  service: name=nginx state=restarted enabled=yes

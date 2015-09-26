@@ -8,3 +8,4 @@
     - base
     - monitoring_tools
     - python
+    - nginx
