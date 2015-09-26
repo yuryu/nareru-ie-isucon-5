@@ -95,10 +95,15 @@ def authenticate(email, password):
             " u.nick_name AS nick_name, u.email AS email " \
             "FROM users u JOIN salts s ON u.id = s.user_id " \
             "WHERE u.email = %s AND u.passhash = SHA2(CONCAT(%s, s.salt), 512)"
-    result = db_fetchone(query, email, password)
-    if not result:
+    # result = db_fetchone(query, email, password)
+    user = bottle.local.users_from_email[email]
+    if not user:
         abort_authentication_error()
-    set_session_user_id(result["id"])
+    if hashlib.sha512((password + user["salt"]).encode('utf-8')).hexdigest() != user["passhash"]:
+        abort_authentication_error()
+    # if not result:
+    #    abort_authentication_error()
+    set_session_user_id(user["id"])
 
 
 def current_user():
@@ -446,8 +451,15 @@ bottle.local.users = {}
 for u in db_fetchall("SELECT * FROM users"):
     bottle.local.users[int(u["id"])] = u
 
-#for s in db.fetchall("SELECT * FROM salts"):
-#    bottle.local.users[int(u["user_id"]]["salt"] = s["salt"]
+for s in db_fetchall("SELECT * FROM salts"):
+    bottle.local.users[s["user_id"]]["salt"] = s["salt"]
+
+
+bottle.local.users_from_email = {}
+bottle.local.users_from_account = {}
+for u in bottle.local.users.values():
+    bottle.local.users_from_account[u["account_name"]] = u
+    bottle.local.users_from_email[u["email"]] = u
 
 if __name__ == "__main__":
     app.run(server="wsgiref",
