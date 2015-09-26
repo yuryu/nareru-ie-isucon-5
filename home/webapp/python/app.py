@@ -3,7 +3,7 @@
 import os
 import bottle
 import pymysql
-
+import hashlib
 
 app = bottle.default_app()
 app.config.load_dict({
@@ -107,8 +107,9 @@ def current_user():
     except AttributeError:
         user_id = get_session_user_id()
         if user_id:
-            query = "SELECT id, account_name, nick_name, email FROM users WHERE id = %s"
-            bottle.request.user = db_fetchone(query, get_session_user_id())
+            # query = "SELECT id, account_name, nick_name, email FROM users WHERE id = %s"
+            # bottle.request.user = db_fetchone(query, get_session_user_id())
+            bottle.request.user = bottle.local.users[user_id]
             if not bottle.request.user:
                 set_session_user_id(None)
                 abort_authentication_error()
@@ -123,8 +124,9 @@ def authenticated():
 
 
 def get_user(user_id):
-    query = "SELECT * FROM users WHERE id = %s"
-    result = db_fetchone(query, user_id)
+    # query = "SELECT * FROM users WHERE id = %s"
+    # result = db_fetchone(query, user_id)
+    result = bottle.local.users[user_id]
     if not result:
         abort_content_not_found()
     return result
@@ -439,6 +441,13 @@ bottle.BaseTemplate.defaults = {
     "current_user": current_user,
     "prefectures": PREFECTURES,
 }
+
+bottle.local.users = {}
+for u in db_fetchall("SELECT * FROM users"):
+    bottle.local.users[int(u["id"])] = u
+
+#for s in db.fetchall("SELECT * FROM salts"):
+#    bottle.local.users[int(u["user_id"]]["salt"] = s["salt"]
 
 if __name__ == "__main__":
     app.run(server="wsgiref",
